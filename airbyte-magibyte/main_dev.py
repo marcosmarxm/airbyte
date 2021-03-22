@@ -449,8 +449,6 @@ def cleanup():
 
 
 def main():
-    config = config_stripe
-    streams = streams_stripe
     config = config_exchange_rate
     streams = streams_exchange_rate
 

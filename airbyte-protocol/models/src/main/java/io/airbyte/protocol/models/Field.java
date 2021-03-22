@@ -24,6 +24,7 @@
 
 package io.airbyte.protocol.models;
 
+import java.io.BufferedInputStream;
 import java.util.Objects;
 
 public class Field {
