@@ -39,10 +39,10 @@ import io.airbyte.commons.io.IOs;
 import io.airbyte.config.JobOutput;
 import io.airbyte.config.StandardSyncOutput;
 import io.airbyte.config.StandardSyncSummary;
-import io.airbyte.scheduler.Attempt;
-import io.airbyte.scheduler.Job;
 import io.airbyte.scheduler.client.SynchronousJobMetadata;
 import io.airbyte.scheduler.client.SynchronousResponse;
+import io.airbyte.scheduler.models.Attempt;
+import io.airbyte.scheduler.models.Job;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
@@ -119,7 +119,7 @@ public class JobConverter {
         .createdAt(metadata.getCreatedAt())
         .endedAt(metadata.getEndedAt())
         .succeeded(metadata.isSucceeded())
-        .logs(metadata.getLogPath().map(JobConverter::getLogRead).orElse(null));
+        .logs(JobConverter.getLogRead(metadata.getLogPath()));
   }
 
 }

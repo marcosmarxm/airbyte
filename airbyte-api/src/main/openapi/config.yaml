@@ -1101,6 +1101,29 @@ paths:
           description: Job not found
         "422":
           $ref: "#/components/responses/InvalidInput"
+  /v1/jobs/cancel:
+    post:
+      tags:
+        - jobs
+      summary: Cancels a job
+      operationId: cancelJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobIdRequestBody"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobInfoRead"
+        "404":
+          description: Job not found
+        "422":
+          $ref: "#/components/responses/InvalidInput"
   /v1/health:
     get:
       tags:
@@ -2129,10 +2152,12 @@ components:
           $ref: "#/components/schemas/SourceRead"
         destination:
           $ref: "#/components/schemas/DestinationRead"
-        lastSync:
-          description: epoch time of last sync. null if no sync has taken place.
+        latestSyncJobCreatedAt:
+          description: epoch time of the latest sync job. null if no sync job has taken place.
           type: integer
           format: int64
+        latestSyncJobStatus:
+          $ref: "#/components/schemas/JobStatus"
         isSyncing:
           type: boolean
     WbConnectionReadList:
