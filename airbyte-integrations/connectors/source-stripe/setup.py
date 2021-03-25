@@ -22,30 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .catalog_helpers import CatalogHelper
-from .client import BaseClient
-from .integration import AirbyteSpec, Destination, Integration, Source
-from .logger import AirbyteLogger
-from .source import BaseSource
-from .abstract_source import AbstractSource, HttpStream, HttpAuthenticator, ResponseParser, Stream, SimpleAuthenticator
+from setuptools import find_packages, setup
 
-# Must be the last one because the way we load the connector module creates a circular
-# dependency and models might not have been loaded yet
-from .entrypoint import AirbyteEntrypoint  # noqa isort:skip
-
-__all__ = [
-    "AirbyteLogger",
-    "AirbyteSpec",
-    "AbstractSource",
-    "BaseClient",
-    "BaseSource",
-    "CatalogHelper",
-    "Destination",
-    "HttpAuthenticator",
-    "HttpStream",
-    "Integration",
-    "Source",
-    "Stream",
-    "SimpleAuthenticator",
-    "ResponseParser"
-]
+setup(
+    name="source_stripe",
+    description="Source implementation for Stripe.",
+    author="Airbyte",
+    author_email="contact@airbyte.io",
+    packages=find_packages(),
+    package_data={"": ["*.json"]},
+    install_requires=[
+        "airbyte-protocol"
+    ],
+)
