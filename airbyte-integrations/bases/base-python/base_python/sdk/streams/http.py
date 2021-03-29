@@ -4,7 +4,9 @@ from typing import Dict, Iterable, Any, Union
 import requests
 
 from ..auth.core import HttpAuthenticator, NoAuth
+
 from .core import Stream
+
 
 class HttpStream(Stream, ABC):
     http_method = "GET"
@@ -46,14 +48,6 @@ class HttpStream(Stream, ABC):
         :return: The token for the next page from the input response object. Returning None means there are no more pages to read in this response.
         """
 
-    def get_request_params(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict = None) -> Iterable[Dict[str, Any]]:
-        """
-        :return: An iterable of request parameters. Each dict returned will be used to make a request (with pagination).
-        If you need to make multiple requests (not including pagination) to read this stream (for example, if each request reads data for a particular
-        date and you want to read data from multiple dates), then this method should return one dict for each request e.g: for each date.
-        """
-        yield from [{}]
-
     @property
     @abstractmethod
     def url_base(self) -> str:
@@ -68,23 +62,57 @@ class HttpStream(Stream, ABC):
         :return: URL path for the API endpoint e.g: if you wanted to hit https://myapi.com/v1/some_entity then this should return "some_entity"
         """
 
+    def get_request_params(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict = None) -> Iterable[Dict[str, Any]]:
+        """
+        :return: An iterable of request parameters. Each dict returned will be used to make a request (with pagination).
+        If you need to make multiple requests (not including pagination) to read this stream (for example, if each request reads data for a particular
+        date and you want to read data from multiple dates), then this method should return one dict for each request e.g: for each date.
+        """
+        yield from [{}]
+
+    def get_request_headers(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict = None):
+        """
+        Override to return any non-auth headers.
+
+        :param stream_state:
+        :param parent_stream_record:
+        :return:
+        """
+        return {}
+
+    def backoff_time(self, response: requests.Response):
+        """
+        :return: How long to backoff for
+        """
+        # TODO
+        return 1
+
+    def should_backoff(self, response: requests.Response) -> bool:
+        """
+        Override to set different conditions for backoff.
+        """
+        return response.status_code == 429 or 500 <= response.status_code < 600
+
+
     def list_records(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict[str, Any] = None) -> Iterable[Dict[str, Any]]:
         """
         :param parent_stream_record If this is a child stream, this is a record from the parent stream. Otherwise, this record is None.
         :return:
         """
-        # create empty request
-        args = {'parent_stream_record': parent_stream_record} if parent_stream_record else {'stream_state': stream_state}
+        args = {'stream_state': stream_state}
+        if parent_stream_record:
+            args['parent_stream_record'] = parent_stream_record
 
         request_parameters = self.get_request_params(**args) or [{}]
         for params in request_parameters:
             done = False
+            headers = dict(self.get_request_headers(**args), **self.authenticator.get_auth_header())
             # while loop paginates through the response
             while not done:
                 request = requests.Request(
                     method=self.http_method,
                     url=self.url_base + self.path(**args),
-                    headers=self.authenticator.get_auth_header(),
+                    headers=headers,
                     params=params
                 )
 
@@ -106,6 +134,6 @@ class HttpStream(Stream, ABC):
         # re-read for the benefit of syncing the child stream.
         if self._parent_stream:
             for parent_stream_record in self._parent_stream.read_stream():
-                yield from self.list_records(parent_stream_record=parent_stream_record)
+                yield from self.list_records(parent_stream_record=parent_stream_record, stream_state=stream_state)
         else:
             yield from self.list_records(stream_state=stream_state)
