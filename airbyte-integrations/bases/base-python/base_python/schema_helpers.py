@@ -1,11 +1,9 @@
 import json
 import os
 import pkgutil
-from abc import ABC
 from typing import Dict
 
 import pkg_resources
-
 from jsonschema import RefResolver
 
 

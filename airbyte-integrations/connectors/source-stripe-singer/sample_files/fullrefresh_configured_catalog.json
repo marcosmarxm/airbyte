@@ -2643,10 +2643,10 @@
             }
           }
         },
-        "supported_sync_modes": ["incremental"],
+        "supported_sync_modes": ["full_refresh"],
         "source_defined_cursor": true
       },
-      "sync_mode": "incremental"
+      "sync_mode": "full_refresh"
     },
     {
       "stream": {
@@ -3246,11 +3246,11 @@
             }
           }
         },
-        "supported_sync_modes": ["incremental"],
+        "supported_sync_modes": ["full_refresh"],
         "source_defined_cursor": true,
         "default_cursor_field": ["created"]
       },
-      "sync_mode": "incremental",
+      "sync_mode": "full_refresh",
       "cursor_field": ["created"]
     },
     {

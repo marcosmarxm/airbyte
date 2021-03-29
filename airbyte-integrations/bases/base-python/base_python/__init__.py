@@ -27,7 +27,14 @@ from .client import BaseClient
 from .integration import AirbyteSpec, Destination, Integration, Source
 from .logger import AirbyteLogger
 from .source import BaseSource
-from .abstract_source import AbstractSource, HttpStream, HttpAuthenticator, ResponseParser, Stream, SimpleAuthenticator
+
+# Separate the SDK imports so they can be moved somewhere else more easily
+from .sdk.auth.core import HttpAuthenticator
+from .sdk.auth.simple import SimpleAuthenticator
+from .sdk.streams.core import IncrementalStream, Stream
+from .sdk.streams.http import HttpStream
+from .sdk.abstract_source import AbstractSource
+
 
 # Must be the last one because the way we load the connector module creates a circular
 # dependency and models might not have been loaded yet
@@ -43,9 +50,9 @@ __all__ = [
     "Destination",
     "HttpAuthenticator",
     "HttpStream",
+    "IncrementalStream",
     "Integration",
     "Source",
     "Stream",
     "SimpleAuthenticator",
-    "ResponseParser"
 ]
