@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Iterable
+from typing import Dict, Any, Iterable, List, Union
 from ...logger import AirbyteLogger
 from ...schema_helpers import ResourceSchemaLoader
 
@@ -45,18 +45,20 @@ class Stream(ABC):
 
 
 class IncrementalStream(Stream, ABC):
-    # TODO implement this to support fully auto-generating catalog info
-    # @property
-    # def cursor_field(self) -> str:
-    #     """
-    #     Override to return the name of the default cursor field used by this stream e.g: an API entity might always use created_at as the cursor field.
-    #     :return: The name of the field used as a cursor
-    #     """
-    #     return []
-    #
-    # @property
-    # @abstractmethod
-    # def source_defined_cursor(self) -> bool:
+    @property
+    def cursor_field(self) -> Union[str, List[str]]:
+        """
+        Override to return the name of the default cursor field used by this stream e.g: an API entity might always use created_at as the cursor field.
+        :return: The name of the field used as a cursor. If the cursor is nested, return an array consisting of the path to the cursor.
+        """
+        return []
+
+    @property
+    def source_defined_cursor(self) -> bool:
+        """
+        Override to indicate that the cursor field is custom
+        """
+        return True
 
     @property
     @abstractmethod

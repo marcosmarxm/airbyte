@@ -73,18 +73,20 @@ class AbstractSource(Source, ABC):
         streams = []
 
         for name, stream in self.streams(config=config).items():
+            args = {
+                'name': name,
+                'json_schema': stream.get_json_schema(),
+            }
+
             supported_sync_modes = [SyncMode.full_refresh]
             if isinstance(stream, IncrementalStream):
-                # source_defined_cursor = False TODO
                 supported_sync_modes.append(SyncMode.incremental)
-                # source_defined_cursor = True
+                args['source_defined_cursor'] = stream.source_defined_cursor
+                args['default_cursor_field'] = [stream.cursor_field] if isinstance(stream.cursor_field, str) else stream.cursor_field
 
-            streams.append(AirbyteStream(
-                name=name,
-                json_schema=stream.get_json_schema(),
-                supported_sync_modes=supported_sync_modes,
-                # source_defined_cursor=source_defined_cursor,
-            ))
+            args['supported_sync_modes'] = supported_sync_modes
+
+            streams.append(AirbyteStream(**args))
 
         return AirbyteCatalog(streams=streams)
 
