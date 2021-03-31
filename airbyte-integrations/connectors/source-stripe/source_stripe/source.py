@@ -9,21 +9,20 @@ class StripeStream(HttpStream):
     url_base = "https://api.stripe.com/v1/"
 
     def get_next_page_token(self, decoded_response: Dict[str, Any]) -> Union[Dict[str, Any], None]:
-        if decoded_response['has_more'] and bool(decoded_response['has_more']):
-            if decoded_response['data'] and len(decoded_response['data']) > 0:
-                last_object_id = decoded_response['data'][-1]['id']
-                return {'starting_after': last_object_id}
-        # return None  # skip for faster testing
+        # if decoded_response['has_more'] and bool(decoded_response['has_more']):
+        #     if decoded_response['data'] and len(decoded_response['data']) > 0:
+        #         last_object_id = decoded_response['data'][-1]['id']
+        #         return {'starting_after': last_object_id}
+        return None  # skip for faster testing
 
     def parse_response(self, decoded_response: Dict) -> Iterable[Dict]:
         if decoded_response['data']:
             for record in decoded_response['data']:
                 yield record
 
-    def get_request_params(self, parent_stream_record=None, stream_state={}):
-        yield {
-            'limit': 5
-        }
+    def get_request_params(self, **kwargs):
+        # TODO remove this limit. just here to speed up testing
+        return {'limit': 1}
 
 
 class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
@@ -34,13 +33,13 @@ class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
     def cursor_field(self) -> str:
         pass
 
-    def get_request_params(self, parent_stream_record=None, stream_state=None):
+    def get_request_params(self, stream_state=None, **kwargs):
         stream_state = stream_state or {}
-        for param_dict in super().get_request_params(stream_state=stream_state):
-            param_dict.update({
-                'created' : stream_state.get(self.cursor_field),
-            })
-            yield param_dict
+        params = super().get_request_params(stream_state=stream_state)
+        params.update({
+            'created': stream_state.get(self.cursor_field)
+        })
+        return params
 
     def get_updated_state(self, current_state, latest_record) -> Dict[str, Any]:
         return {
@@ -51,7 +50,7 @@ class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
 class Customers(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None) -> str:
+    def path(self, **kwargs) -> str:
         return "customers"
 
 
@@ -59,21 +58,21 @@ class BalanceTransactions(IncrementalStripeStream):
     cursor_field = 'created'
     name = "balance_transactions"
 
-    def path(self, stream_state=None) -> str:
+    def path(self, **kwargs) -> str:
         return "balance_transactions"
 
 
 class Charges(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None) -> str:
+    def path(self, **kwargs) -> str:
         return "charges"
 
 
 class CustomerBalanceTransactions(StripeStream):
     name = "customer_balance_transactions"
 
-    def path(self, parent_stream_record, stream_state=None):
+    def path(self, parent_stream_record, **kwargs):
         customer_id = parent_stream_record['id']
         return f"customers/{customer_id}/balance_transactions"
 
@@ -81,35 +80,35 @@ class CustomerBalanceTransactions(StripeStream):
 class Coupons(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "coupons"
 
 
 class Disputes(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "disputes"
 
 
 class Events(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "events"
 
 
 class Invoices(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "invoices"
 
 
 class InvoiceLineItems(StripeStream):
     name = 'invoice_line_items'
 
-    def path(self, parent_stream_record, stream_state=None):
+    def path(self, parent_stream_record, **kwargs):
         return f"invoices/{parent_stream_record['id']}/lines"
 
 
@@ -117,57 +116,55 @@ class InvoiceItems(IncrementalStripeStream):
     cursor_field = 'date'
     name = 'invoice_items'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "invoiceitems"
 
 
 class Payouts(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "payouts"
 
 
 class Plans(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "plans"
 
 
 class Products(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "products"
 
 
 class Subscriptions(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "subscriptions"
 
 
 class SubscriptionItems(StripeStream):
     name = 'subscription_items'
 
-    def path(self, parent_stream_record, stream_state=None):
+    def path(self, parent_stream_record, **kwargs):
         return "subscription_items"
 
     # TODO we should pack state and everything else into a context object?
-    def get_request_params(self, parent_stream_record=None, stream_state={}):
-        for param_set in super().get_request_params(stream_state=stream_state):
-            yield {
-                'subscription': parent_stream_record['id'],
-                **param_set
-            }
+    def get_request_params(self, parent_stream_record=None, **kwargs):
+        params = super().get_request_params()
+        params['subscription'] = parent_stream_record['id']
+        return params
 
 
 class Transfers(IncrementalStripeStream):
     cursor_field = 'created'
 
-    def path(self, stream_state=None):
+    def path(self, **kwargs):
         return "transfers"
 
 

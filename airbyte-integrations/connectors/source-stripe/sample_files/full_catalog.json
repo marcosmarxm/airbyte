@@ -2024,6 +2024,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -2108,6 +2109,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -3769,6 +3771,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -3962,6 +3965,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -4407,6 +4411,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "date"
       ]
@@ -4735,6 +4740,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "date"
       ]
@@ -5045,7 +5051,8 @@
         ],
         "source_defined_cursor": true
       },
-      "sync_mode": "full_refresh"
+      "sync_mode": "full_refresh",
+      "destination_sync_mode": "overwrite"
     },
     {
       "stream": {
@@ -5223,6 +5230,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -5353,6 +5361,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -5848,6 +5857,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -6179,6 +6189,8 @@
         ]
       },
       "sync_mode": "full_refresh",
+      "destination_sync_mode": "overwrite",
+
       "cursor_field": [
         "created"
       ]
@@ -6340,6 +6352,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -6618,6 +6631,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -6939,6 +6953,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
@@ -7124,6 +7139,7 @@
         ]
       },
       "sync_mode": "incremental",
+      "destination_sync_mode": "overwrite",
       "cursor_field": [
         "created"
       ]
