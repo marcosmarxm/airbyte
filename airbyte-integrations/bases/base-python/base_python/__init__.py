@@ -29,8 +29,8 @@ from .logger import AirbyteLogger
 from .source import BaseSource
 
 # Separate the SDK imports so they can be moved somewhere else more easily
-from .sdk.auth.core import HttpAuthenticator
-from .sdk.auth.simple import SimpleAuthenticator
+from .sdk.streams.auth.core import HttpAuthenticator
+from .sdk.streams.auth.simple import SimpleAuthenticator
 from .sdk.streams.core import IncrementalStream, Stream
 from .sdk.streams.http import HttpStream
 from .sdk.abstract_source import AbstractSource

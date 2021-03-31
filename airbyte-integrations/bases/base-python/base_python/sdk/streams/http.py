@@ -1,10 +1,12 @@
 import copy
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, Any, Union, Optional
+from typing import Dict, Iterable, Any, Optional
 
 import requests
 
-from ..auth.core import HttpAuthenticator, NoAuth
+from .auth.core import HttpAuthenticator, NoAuth
+from .exceptions import DefaultBackoffException, CustomBackoffException
+from .rate_limiting import custom_backoff_handler, default_backoff_handler
 
 from .core import Stream
 
@@ -36,15 +38,16 @@ class HttpStream(Stream, ABC):
 
     def get_request_configurations(self, stream_state: Dict[str, Any], parent_stream_record: Dict = None) -> Iterable[Optional[Dict]]:
         """
-        Override this method if you need to make multiple HTTP requests (not counting pagination) to fully read the data from this stream.
-        For example, if each request reads data for a particular date and you want to read data from multiple dates, then this method should
+        Override this method to control the number of HTTP requests (not counting pagination) this stream makes.
+
+        For example, if a single request request reads data for a particular date and you want to read data from multiple dates, then this method should
         return one dict for each request that should be made e.g: [{'date':'01-01-2020'}, {'date':'01-02-2020'}], etc.
 
-        Each request configurations will be passed input to most other methods in this class for use as needed.
+        Alternatively, if you want to make no requests (e.g: if you don't want to use up more than 30% of your API's rate limit for the day) then
+        return an empty iterable.
 
-        Note that pagination is handled separately. For instance, following the date example above, if you only need to query
-        one date, but the response contains 10 pages (each of which creates an HTTP request), then this method should return an iterable with one
-        element {'date':'01-01-2020'} and pagination should be handled separately through get_next_page_token.
+        Each element in the returned iterable will be passed as input to most other methods in this class to initiate a single HTTP request, plus any
+        subsequent requests needed for pagination.
 
         :return: An iterable (list or generator) of request configurations
         """
@@ -132,18 +135,28 @@ class HttpStream(Stream, ABC):
         """
         yield [response]
 
-    # def backoff_time(self, response: requests.Response):
-    #     """
-    #     :return: How long to backoff for
-    #     """
-    #     # TODO
-    #     return 1
-    #
-    # def should_backoff(self, response: requests.Response) -> bool:
-    #     """
-    #     Override to set different conditions for backoff.
-    #     """
-    #     return response.status_code == 429 or 500 <= response.status_code < 600
+    def should_backoff(self, response: requests.Response) -> bool:
+        """
+        Override to set different conditions for backoff based on the response from the server.
+
+        By default, back off on the following HTTP response statuses:
+         - 429 (Too Many Requests) indicating rate limiting
+         - 500s to handle transient server errors
+
+        Unexpected but transient exceptions (connection timeout, DNS resolution failed, etc..) are retried by default.
+        """
+        return response.status_code == 429 or 500 <= response.status_code < 600
+
+    def backoff_time(self, response: requests.Response) -> Optional[float]:
+        """
+        Override this method to dynamically determine backoff time e.g: by reading the X-Retry-After header.
+
+        This method is called only if should_backoff() returns True for the input request.
+
+        :return how long to backoff in seconds. The return value may be a floating point number for subsecond precision. Returning None defers backoff
+        to the default backoff behavior (e.g using an exponential algorithm).
+        """
+        return None
 
     def _create_prepared_request(self, path: str, headers: Dict = None, params: Dict = None, json: Any = None) -> requests.PreparedRequest:
         args = {
@@ -158,9 +171,39 @@ class HttpStream(Stream, ABC):
 
         return requests.Request(**args).prepare()
 
+    # TODO allow configuring these parameters
+    @default_backoff_handler(max_tries=5, factor=5)
+    @custom_backoff_handler(max_tries=5)
     def _send_request(self, request: requests.PreparedRequest) -> requests.Response:
-        # TODO handle errors, rate limits
-        return self._session.send(request)
+        """
+        Wraps sending the request in rate limit and error handlers.
+
+        This method handles two types of exceptions:
+            1. Expected transient exceptions e.g: 429 status code.
+            2. Unexpected transient exceptions e.g: timeout.
+
+        To trigger a backoff, we raise an exception that is handled by the backoff decorator. If an exception is not handled by the decorator will
+        fail the sync.
+
+        For expected transient exceptions, backoff time is determined by the type of exception raised:
+            1. CustomBackoffException uses the user-provided backoff value
+            2. DefaultBackoffException falls back on the decorator's default behavior e.g: exponential backoff
+
+        Unexpected transient exceptions use the default backoff parameters.
+        Unexpected persistent exceptions are not handled and will cause the sync to fail.
+        """
+        response: requests.Response = self._session.send(request)
+        if self.should_backoff(response):
+            custom_backoff_time = self.backoff_time(response)
+            if custom_backoff_time:
+                raise CustomBackoffException(custom_backoff_time, request, response)
+            else:
+                raise DefaultBackoffException(request=request, response=response)
+        else:
+            # Raise any HTTP exceptions that happened in case there were unexpected ones
+            response.raise_for_status()
+
+        return response
 
     def _list_records(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict[str, Any] = None) -> Iterable[Dict[str, Any]]:
         """
