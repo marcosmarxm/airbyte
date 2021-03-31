@@ -73,7 +73,20 @@ class ResourceSchemaLoader:
         self.package_name = package_name
 
     def get_schema(self, name: str) -> dict:
-        raw_schema = json.loads(pkgutil.get_data(self.package_name, f"schemas/{name}.json"))
+        # print(self.package_name)
+        # print(os.path.join(os.path.dirname(sys.modules[self.package_name].__file__), f"schemas/{name}.json"))
+        # TODO if the json file is malformed then a very unhelpful error message is thrown
+        schema_filename = f"schemas/{name}.json"
+        raw_file = pkgutil.get_data(self.package_name, schema_filename)
+        if not raw_file:
+            raise IOError(f"Cannot find file {schema_filename}")
+        try:
+            raw_schema = json.loads(raw_file)
+        except ValueError:
+            # TODO use proper logging
+            print(f'Invalid JSON file format for file {schema_filename}')
+            raise
+
         shared_schemas_folder = pkg_resources.resource_filename(self.package_name, "schemas/shared/")
         if os.path.exists(shared_schemas_folder):
             return JsonSchemaResolver(shared_schemas_folder).resolve(raw_schema)

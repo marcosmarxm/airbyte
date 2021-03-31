@@ -41,6 +41,8 @@ class Stream(ABC):
         """
         # TODO show an example of using pydantic to define the JSON schema, or reading an OpenAPI spec
         # TODO change to snakecase by default
+        print(self.__class__)
+        print(self.name)
         return ResourceSchemaLoader(package_name_from_class(self.__class__)).get_schema(self.name)
 
 
