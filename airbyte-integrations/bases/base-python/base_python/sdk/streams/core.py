@@ -1,6 +1,7 @@
 import inspect
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Iterable
+from ...logger import AirbyteLogger
 from ...schema_helpers import ResourceSchemaLoader
 
 
@@ -11,6 +12,8 @@ def package_name_from_class(cls: object) -> str:
 
 
 class Stream(ABC):
+    logger = AirbyteLogger()  # TODO use native "logging" loggers with custom handlers
+
     @property
     def name(self) -> str:
         """

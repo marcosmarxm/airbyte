@@ -9,6 +9,7 @@ class StripeStream(HttpStream):
     url_base = "https://api.stripe.com/v1/"
 
     def get_next_page_token(self, decoded_response: Dict[str, Any]) -> Union[Dict[str, Any], None]:
+        logger.info("Hey there partner!!!")
         # if decoded_response['has_more'] and bool(decoded_response['has_more']):
         #     if decoded_response['data'] and len(decoded_response['data']) > 0:
         #         last_object_id = decoded_response['data'][-1]['id']
