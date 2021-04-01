@@ -41,7 +41,7 @@ class HttpStream(Stream, ABC):
         """
         Override this method to control the number of HTTP requests (not counting pagination) this stream makes.
 
-        For example, if a single request request reads data for a particular date and you want to read data from multiple dates, then this method should
+        For example, if a single request reads data for a particular date and you want to read data from multiple dates, then this method should
         return one dict for each request that should be made e.g: [{'date':'01-01-2020'}, {'date':'01-02-2020'}], etc.
 
         Alternatively, if you want to make no requests (e.g: if you don't want to use up more than 30% of your API's rate limit for the day) then
