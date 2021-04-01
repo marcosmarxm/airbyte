@@ -7,7 +7,7 @@ class BaseBackoffException(exceptions.HTTPError):
 
 class CustomBackoffException(BaseBackoffException):
     """
-    A class that specifies how long to backoff
+    An exception that exposes how long it attempted to backoff
     """
 
     def __init__(self, backoff, request, response):
