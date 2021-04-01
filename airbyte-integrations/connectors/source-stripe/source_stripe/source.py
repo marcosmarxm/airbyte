@@ -1,28 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import Any, Mapping, Tuple, Dict, Union, Iterable
+from typing import Any, Tuple, Mapping, Iterable, Optional
 
-import requests
-from base_python import AbstractSource, HttpAuthenticator, HttpStream, IncrementalStream, Stream, SimpleAuthenticator
+from base_python import ApiTokenAuthenticator, AbstractSource, HttpStream, IncrementalStream, Stream
 
 
 class StripeStream(HttpStream):
     url_base = "https://api.stripe.com/v1/"
 
-    def get_next_page_token(self, decoded_response: Dict[str, Any]) -> Union[Dict[str, Any], None]:
-        if decoded_response['has_more'] and bool(decoded_response['has_more']):
-            if decoded_response['data'] and len(decoded_response['data']) > 0:
+    def get_next_page_token(self, decoded_response: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
+        if decoded_response.get('has_more') and bool(decoded_response['has_more']):
+            if decoded_response.get('data') and len(decoded_response['data']) > 0:
                 last_object_id = decoded_response['data'][-1]['id']
                 return {'starting_after': last_object_id}
-        # return None  # skip for faster testing
 
-    def parse_response(self, decoded_response: Dict) -> Iterable[Dict]:
-        if decoded_response['data']:
-            for record in decoded_response['data']:
-                yield record
-
-    def get_request_params(self, **kwargs):
-        # TODO remove this limit. just here to speed up testing
-        return {'limit': 1}
+    def parse_response(self, decoded_response: Mapping) -> Iterable[Mapping]:
+        if decoded_response.get('data'):
+            yield from decoded_response['data']
 
 
 class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
@@ -36,12 +29,10 @@ class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
     def get_request_params(self, stream_state=None, **kwargs):
         stream_state = stream_state or {}
         params = super().get_request_params(stream_state=stream_state)
-        params.update({
-            'created': stream_state.get(self.cursor_field)
-        })
+        params['created'] = stream_state.get(self.cursor_field)
         return params
 
-    def get_updated_state(self, current_state, latest_record) -> Dict[str, Any]:
+    def get_updated_state(self, current_state, latest_record) -> Mapping[str, Any]:
         return {
             self.cursor_field: max(latest_record.get(self.cursor_field), current_state.get(self.cursor_field, 0))
         }
@@ -154,7 +145,6 @@ class SubscriptionItems(StripeStream):
     def path(self, **kwargs):
         return "subscription_items"
 
-    # TODO we should pack state and everything else into a context object?
     def get_request_params(self, parent_stream_record=None, **kwargs):
         params = super().get_request_params()
         params['subscription'] = parent_stream_record['id']
@@ -174,7 +164,7 @@ class SourceStripe(AbstractSource):
         return True, None
 
     def streams(self, config: Mapping[str, Any]) -> Mapping[str, Stream]:
-        authenticator = SimpleAuthenticator(config['client_secret'])
+        authenticator = ApiTokenAuthenticator(config['client_secret'])
 
         customers = Customers(authenticator=authenticator)
         subscriptions = Subscriptions(authenticator=authenticator)
