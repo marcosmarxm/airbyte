@@ -33,16 +33,17 @@ from airbyte_protocol import (
     AirbyteMessage,
     AirbyteRecordMessage,
     AirbyteStateMessage,
+    AirbyteStream,
     ConfiguredAirbyteCatalog,
     ConfiguredAirbyteStream,
     Status,
-    SyncMode, AirbyteStream,
+    SyncMode,
 )
 from airbyte_protocol import Type as MessageType
 
-from ..integration import Source
-from ..logger import AirbyteLogger
-from .streams.core import Stream, IncrementalStream
+from base_python.integration import Source
+from base_python.logger import AirbyteLogger
+from base_python.sdk.streams.core import Stream, IncrementalStream
 
 
 class AbstractSource(Source, ABC):

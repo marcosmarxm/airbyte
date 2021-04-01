@@ -1,10 +1,10 @@
-from typing import Dict, Any
+from typing import Mapping, Any
 
-from .core import HttpAuthenticator
+from base_python.sdk.streams.auth.core import HttpAuthenticator
 
 class SimpleAuthenticator(HttpAuthenticator):
     def __init__(self, token: str):
         self._token = token
 
-    def get_auth_header(self) -> Dict[str, Any]:
+    def get_auth_header(self) -> Mapping[str, Any]:
         return {"Authorization": f"Bearer {self._token}"}

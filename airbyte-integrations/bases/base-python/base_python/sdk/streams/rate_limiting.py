@@ -2,9 +2,9 @@ import sys
 import time
 
 import backoff
-from ...logger import AirbyteLogger
+from base_python.logger import AirbyteLogger
 from requests import exceptions
-from .exceptions import DefaultBackoffException, CustomBackoffException
+from base_python.sdk.streams.exceptions import DefaultBackoffException, CustomBackoffException
 
 TRANSIENT_EXCEPTIONS = (DefaultBackoffException, exceptions.ConnectTimeout, exceptions.ReadTimeout)
 
@@ -34,6 +34,7 @@ def default_backoff_handler(max_tries: int, factor: int, **kwargs):
     )
 
 
+# TODO rename
 def custom_backoff_handler(max_tries: int, **kwargs):
     def sleep_on_ratelimit(details):
         _, exc, _ = sys.exc_info()

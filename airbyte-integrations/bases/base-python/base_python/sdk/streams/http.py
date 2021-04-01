@@ -1,14 +1,15 @@
 import copy
-from abc import ABC, abstractmethod
-from typing import Dict, Iterable, Any, Optional
-
 import requests
 
-from .auth.core import HttpAuthenticator, NoAuth
-from .exceptions import DefaultBackoffException, CustomBackoffException
-from .rate_limiting import custom_backoff_handler, default_backoff_handler
+from abc import ABC, abstractmethod
+from typing import Mapping, Iterable, Any, Optional
 
-from .core import Stream
+
+from base_python.sdk.streams.auth.core import HttpAuthenticator, NoAuth
+from base_python.sdk.streams.exceptions import DefaultBackoffException, CustomBackoffException
+from base_python.sdk.streams.rate_limiting import custom_backoff_handler, default_backoff_handler
+
+from base_python.sdk.streams.core import Stream
 
 
 class HttpStream(Stream, ABC):
@@ -36,7 +37,7 @@ class HttpStream(Stream, ABC):
     def authenticator(self) -> HttpAuthenticator:
         return self._authenticator
 
-    def get_request_configurations(self, stream_state: Dict[str, Any], parent_stream_record: Dict = None) -> Iterable[Optional[Dict]]:
+    def get_request_configurations(self, stream_state: Mapping[str, Any], parent_stream_record: Mapping = None) -> Iterable[Optional[Mapping]]:
         """
         Override this method to control the number of HTTP requests (not counting pagination) this stream makes.
 
@@ -54,7 +55,7 @@ class HttpStream(Stream, ABC):
         return [None]
 
     @abstractmethod
-    def get_next_page_token(self, decoded_response: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def get_next_page_token(self, decoded_response: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
         """
         Override this method to define a pagination strategy.
 
@@ -66,10 +67,10 @@ class HttpStream(Stream, ABC):
     @abstractmethod
     def path(
             self,
-            request_configuration: Optional[Dict] = None,
-            stream_state: Dict[str, Any] = {},
-            next_page_token: Dict[str, Any] = None,
-            parent_stream_record: Dict = None
+            request_configuration: Optional[Mapping] = None,
+            stream_state: Mapping[str, Any] = {},
+            next_page_token: Mapping[str, Any] = None,
+            parent_stream_record: Mapping = None
     ) -> str:
         """
         Returns the URL path for the API endpoint e.g: if you wanted to hit https://myapi.com/v1/some_entity then this should return "some_entity"
@@ -77,11 +78,11 @@ class HttpStream(Stream, ABC):
 
     def get_request_params(
             self,
-            request_configuration: Optional[Dict] = None,
-            stream_state: Dict[str, Any] = {},
-            next_page_token: Dict[str, Any] = None,
-            parent_stream_record: Dict = None
-    ) -> Dict[str, Any]:
+            request_configuration: Optional[Mapping] = None,
+            stream_state: Mapping[str, Any] = {},
+            next_page_token: Mapping[str, Any] = None,
+            parent_stream_record: Mapping = None
+    ) -> Mapping[str, Any]:
         """
         Override this method to define the query parameters that should be set on an outgoing HTTP request given the inputs.
 
@@ -91,11 +92,11 @@ class HttpStream(Stream, ABC):
 
     def get_request_headers(
             self,
-            request_configuration: Optional[Dict] = None,
-            stream_state: Dict[str, Any] = {},
-            next_page_token: Dict[str, Any] = None,
-            parent_stream_record: Dict = None
-    ) -> Dict[str, Any]:
+            request_configuration: Optional[Mapping] = None,
+            stream_state: Mapping[str, Any] = {},
+            next_page_token: Mapping[str, Any] = None,
+            parent_stream_record: Mapping = None
+    ) -> Mapping[str, Any]:
         """
         Override to return any non-auth headers. Authentication headers will overwrite any overlapping headers returned from this method.
         """
@@ -103,28 +104,28 @@ class HttpStream(Stream, ABC):
 
     def get_request_body_json(
             self,
-            request_configuration: Optional[Dict] = None,
-            stream_state: Dict[str, Any] = {},
-            next_page_token: Dict[str, Any] = None,
-            parent_stream_record: Dict = None
-    ) -> Optional[Dict]:
+            request_configuration: Optional[Mapping] = None,
+            stream_state: Mapping[str, Any] = {},
+            next_page_token: Mapping[str, Any] = None,
+            parent_stream_record: Mapping = None
+    ) -> Optional[Mapping]:
         """
         TODO make this possible to do for non-JSON APIs
         Override when creating POST requests to populate the body of the request with a JSON payload.
         """
         return None
 
-    def decode_response(self, response: requests.Response) -> Dict:
+    def decode_response(self, response: requests.Response) -> Mapping:
         """
         Decodes the response object from its raw form returned from the API to a Dict. By default this parses a JSON.
         Override to parse responses differently e.g as XML or custom binary format.
 
         :param response: The response object returned from the API endpoint.
-        :return: The response object decoded into a Dict. For example, using response.json() or response.text() wrapped in a Dict etc...
+        :return: The response object decoded into a Dict. For example, using response.json() or response.text() wrapped in a Mapping etc...
         """
         return response.json()
 
-    def parse_response(self, response: Dict) -> Iterable[Dict]:
+    def parse_response(self, response: Mapping) -> Iterable[Mapping]:
         """
         Parses the raw response object into a list of records. This is useful in cases where a response contains more than one record e.g: a page
         of 100 responses. This is also useful if you want to transform the incoming data e.g: filter some records or change some fields.
@@ -135,7 +136,7 @@ class HttpStream(Stream, ABC):
         """
         yield [response]
 
-    def should_backoff(self, response: requests.Response) -> bool:
+    def should_retry(self, response: requests.Response) -> bool:
         """
         Override to set different conditions for backoff based on the response from the server.
 
@@ -158,7 +159,7 @@ class HttpStream(Stream, ABC):
         """
         return None
 
-    def _create_prepared_request(self, path: str, headers: Dict = None, params: Dict = None, json: Any = None) -> requests.PreparedRequest:
+    def _create_prepared_request(self, path: str, headers: Mapping = None, params: Mapping = None, json: Any = None) -> requests.PreparedRequest:
         args = {
             'method': self.http_method,
             'url': self.url_base + path,
@@ -193,10 +194,10 @@ class HttpStream(Stream, ABC):
         Unexpected persistent exceptions are not handled and will cause the sync to fail.
         """
         response: requests.Response = self._session.send(request)
-        if self.should_backoff(response):
+        if self.should_retry(response):
             custom_backoff_time = self.backoff_time(response)
             if custom_backoff_time:
-                raise CustomBackoffException(custom_backoff_time, request, response)
+                raise CustomBackoffException(backoff=custom_backoff_time, request=request, response=response)
             else:
                 raise DefaultBackoffException(request=request, response=response)
         else:
@@ -205,7 +206,7 @@ class HttpStream(Stream, ABC):
 
         return response
 
-    def _list_records(self, stream_state: Dict[str, Any] = {}, parent_stream_record: Dict[str, Any] = None) -> Iterable[Dict[str, Any]]:
+    def _list_records(self, stream_state: Mapping[str, Any] = {}, parent_stream_record: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
         """
         :param parent_stream_record If this is a child stream, this is a record from the parent stream. Otherwise, this record is None.
         :return:
@@ -241,7 +242,7 @@ class HttpStream(Stream, ABC):
         # Always return an empty generator just in case no records were ever yielded
         yield from []
 
-    def read_stream(self, stream_state: Dict[str, Any] = None) -> Iterable[Dict[str, Any]]:
+    def read_stream(self, stream_state: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
         # TODO this can be made more efficient if syncs are sequenced so that each API endpoint is called exactly once. Right now parent streams are
         # re-read for the benefit of syncing the child stream.
         if self._parent_stream:

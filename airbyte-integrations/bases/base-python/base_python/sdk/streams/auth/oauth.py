@@ -1,9 +1,9 @@
-from typing import Dict, Any
+from typing import Mapping, Any
 
-from .core import HttpAuthenticator
+from base_python.sdk.streams.auth.core import HttpAuthenticator
 
 
 class Oauth2Authenticator(HttpAuthenticator):
-    def get_auth_header(self) -> Dict[str, Any]:
+    def get_auth_header(self) -> Mapping[str, Any]:
         # TODO
         raise NotImplementedError

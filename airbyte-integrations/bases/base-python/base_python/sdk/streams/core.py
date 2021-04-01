@@ -1,8 +1,8 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Iterable, List, Union
-from ...logger import AirbyteLogger
-from ...schema_helpers import ResourceSchemaLoader
+from typing import Mapping, Any, Iterable, List, Union
+from base_python.logger import AirbyteLogger
+from base_python.schema_helpers import ResourceSchemaLoader
 
 
 def package_name_from_class(cls: object) -> str:
@@ -23,7 +23,7 @@ class Stream(ABC):
         return self.__class__.__name__
 
     @abstractmethod
-    def read_stream(self, stream_state: Dict[str, Any] = {}) -> Iterable[Dict[str, Any]]:
+    def read_stream(self, stream_state: Mapping[str, Any] = {}) -> Iterable[Mapping[str, Any]]:
         """
         This method should be overridden by subclasses
 
@@ -32,7 +32,7 @@ class Stream(ABC):
          of the stream.
         """
 
-    def get_json_schema(self) -> Dict[str, Any]:
+    def get_json_schema(self) -> Mapping[str, Any]:
         """
         :return: A dict of the JSON schema representing this stream.
 
@@ -81,7 +81,7 @@ class IncrementalStream(Stream, ABC):
         """
 
     @abstractmethod
-    def get_updated_state(self, current_state: Dict[str, Any], latest_record: Dict):
+    def get_updated_state(self, current_state: Mapping[str, Any], latest_record: Mapping[str, Any]):
         """
         Inspect the latest record extracted from the data source and the current state object and return an updated state object.
         It is safe to mutate the input state object and return it.
@@ -93,3 +93,4 @@ class IncrementalStream(Stream, ABC):
         :param latest_record: The latest record extracted from the stream
         :return: An updated state object
         """
+
