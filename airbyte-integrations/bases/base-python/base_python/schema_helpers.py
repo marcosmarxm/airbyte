@@ -73,9 +73,6 @@ class ResourceSchemaLoader:
         self.package_name = package_name
 
     def get_schema(self, name: str) -> dict:
-        # print(self.package_name)
-        # print(os.path.join(os.path.dirname(sys.modules[self.package_name].__file__), f"schemas/{name}.json"))
-        # TODO if the json file is malformed then a very unhelpful error message is thrown
         schema_filename = f"schemas/{name}.json"
         raw_file = pkgutil.get_data(self.package_name, schema_filename)
         if not raw_file:
