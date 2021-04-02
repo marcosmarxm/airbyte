@@ -14,12 +14,12 @@ class JsonSchemaResolver:
         self._shared_refs = self._load_shared_schema_refs(shared_schemas_path)
 
     @staticmethod
-    def _load_shared_schema_refs(path: str):
-        shared_file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    def _load_shared_schema_refs(shared_schemas_path: str):
+        shared_file_names = [f for f in os.listdir(shared_schemas_path) if os.path.isfile(os.path.join(shared_schemas_path, f))]
 
         shared_schema_refs = {}
         for shared_file in shared_file_names:
-            with open(os.path.join(path, shared_file)) as data_file:
+            with open(os.path.join(shared_schemas_path, shared_file)) as data_file:
                 shared_schema_refs[shared_file] = json.load(data_file)
 
         return shared_schema_refs
@@ -73,6 +73,17 @@ class ResourceSchemaLoader:
         self.package_name = package_name
 
     def get_schema(self, name: str) -> dict:
+        """
+        This method retrieves a JSON schema from the schemas/ folder.
+
+
+        The expected file structure is to have all top-level schemas (corresponding to streams) in the "schemas/" folder, with any shared $refs
+        living inside the "schemas/shared/" folder. For example:
+        schemas/shared/<shared_definition>.json
+        schemas/<name>.json # contains a $ref to shared_definition
+        schemas/<name2>.json # contains a $ref to shared_definition
+        """
+
         schema_filename = f"schemas/{name}.json"
         raw_file = pkgutil.get_data(self.package_name, schema_filename)
         if not raw_file:
