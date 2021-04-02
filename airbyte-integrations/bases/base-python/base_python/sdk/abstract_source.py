@@ -111,7 +111,7 @@ class AbstractSource(Source, ABC):
             logger.info(f"Set state of {stream_name} stream to {state.get(stream_name)}")
             stream_state = state.get(stream_name)
 
-        logger.info(f"Syncing {stream_name} stream")
+        logger.info(f"Syncing stream: {stream_name}")
         record_counter = 0
         for record in stream_instance.read_stream(stream_state=copy.deepcopy(stream_state)):
             now = int(datetime.now().timestamp()) * 1000
