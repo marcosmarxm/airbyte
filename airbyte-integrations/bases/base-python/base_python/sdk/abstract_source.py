@@ -90,9 +90,11 @@ class AbstractSource(Source, ABC):
         total_state = copy.deepcopy(state)
         logger.info(f"Starting syncing {self.name}")
         # TODO assert all streams exist in the connector
+        stream_instances = self.streams(config)  # get them once in case the connector needs to make any queries to generate streams
         for configured_stream in catalog.streams:
             try:
-                yield from self._read_stream(logger=logger, config=config, configured_stream=configured_stream, state=total_state)
+                yield from self._read_stream(logger=logger, stream_instances=stream_instances, configured_stream=configured_stream,
+                                             state=total_state)
             except Exception as e:
                 logger.exception(f"Encountered an exception while reading stream {self.name}")
                 raise e
@@ -100,10 +102,14 @@ class AbstractSource(Source, ABC):
         logger.info(f"Finished syncing {self.name}")
 
     def _read_stream(
-            self, logger: AirbyteLogger, config: Mapping[str, Any], configured_stream: ConfiguredAirbyteStream, state: MutableMapping[str, Any]
+            self,
+            logger: AirbyteLogger,
+            stream_instances: Mapping[str, Stream],
+            configured_stream: ConfiguredAirbyteStream,
+            state: MutableMapping[str, Any]
     ) -> Iterator[AirbyteMessage]:
         stream_name = configured_stream.stream.name
-        stream_instance = self.streams(config)[stream_name]
+        stream_instance = stream_instances[stream_name]
         use_incremental = configured_stream.sync_mode == SyncMode.incremental and isinstance(stream_instance, IncrementalStream)
 
         stream_state = {}
@@ -111,7 +117,7 @@ class AbstractSource(Source, ABC):
             logger.info(f"Set state of {stream_name} stream to {state.get(stream_name)}")
             stream_state = state.get(stream_name)
 
-        logger.info(f"Syncing stream: {stream_name}")
+        logger.info(f"Syncing stream: {stream_name} ")
         record_counter = 0
         for record in stream_instance.read_stream(stream_state=copy.deepcopy(stream_state)):
             now = int(datetime.now().timestamp()) * 1000
@@ -120,8 +126,7 @@ class AbstractSource(Source, ABC):
             record_counter += 1
             if use_incremental:
                 stream_state = stream_instance.get_updated_state(stream_state, record)
-                # TODO allow configuring checkpoint interval
-                if stream_instance.continuously_save_state and record_counter % 10000 == 0:
+                if record_counter % stream_instance.state_checkpoint_interval == 0:
                     state[stream_name] = stream_state
                     yield AirbyteMessage(type=MessageType.STATE, state=AirbyteStateMessage(data=state))
 

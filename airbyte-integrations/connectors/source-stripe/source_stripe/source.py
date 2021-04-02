@@ -1,3 +1,4 @@
+import math
 from abc import ABC, abstractmethod
 from typing import Any, Tuple, Mapping, Iterable, Optional
 
@@ -19,7 +20,8 @@ class StripeStream(HttpStream):
 
 
 class IncrementalStripeStream(StripeStream, IncrementalStream, ABC):
-    continuously_save_state = False  # Stripe returns most recently created objects first :(
+    # Stripe returns most recently created objects first, so we don't want to persist state until the entire stream has been read
+    state_checkpoint_interval = math.inf
 
     @property
     @abstractmethod

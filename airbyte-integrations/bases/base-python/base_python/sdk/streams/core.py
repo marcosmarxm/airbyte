@@ -42,8 +42,6 @@ class Stream(ABC):
         """
         # TODO show an example of using pydantic to define the JSON schema, or reading an OpenAPI spec
         # TODO change to snakecase by default
-        print(self.__class__)
-        print(self.name)
         return ResourceSchemaLoader(package_name_from_class(self.__class__)).get_schema(self.name)
 
     def as_airbyte_stream(self) -> AirbyteStream:
@@ -71,20 +69,16 @@ class IncrementalStream(Stream, ABC):
 
     @property
     @abstractmethod
-    def continuously_save_state(self) -> bool:
+    def state_checkpoint_interval(self) -> int:
         """
-        Decides whether state is always safe to checkpoint/save at any point.
+        Decides how often to checkpoint state (i.e: emit a STATE message). E.g: if this returns a value of 100, then state is persisted after reading
+        100 records, then 200, 300, etc.. A good default value is 1000 although your mileage may vary depending on the underlying data source.
 
-        If set to true, a state message is output periodically while syncing this stream (which indicates to the process reading from this stream that
-        state should be saved). If set to false, a state message is output only after the stream has been fully read.
+        Checkpointing a stream avoids re-reading records in the case a sync is failed or cancelled.
 
-        When possible, set this to true as it maximizes the efficiency of reading this stream. For example, if a sync fails halfway through, setting
-        this flag to true will make the stream to read from the latest state. Setting it to false will make it re-extract all the records
-        during the failed sync.
-
-        This flag should only be set to false if records returned from the underlying data source are not returned in ascending order with respect
-        to the cursor field e.g: if the source does not support reading records in ascending order of created_at date. In those cases, state must
-        only be saved once the full stream has been read, and so this flag should be set to false.
+        return math.inf if state should not be checkpointed e.g: because records returned from the underlying data source are not returned in
+        ascending order with respect to the cursor field. This can happen if e.g: the source does not support reading records in ascending order of
+        created_at date. In those cases, state must only be saved once the full stream has been read.
         """
 
     @abstractmethod
