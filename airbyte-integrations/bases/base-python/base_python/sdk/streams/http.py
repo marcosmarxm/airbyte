@@ -6,8 +6,8 @@ from typing import Mapping, Iterable, Any, Optional
 
 
 from base_python.sdk.streams.auth.core import HttpAuthenticator, NoAuth
-from base_python.sdk.streams.exceptions import DefaultBackoffException, CustomBackoffException
-from base_python.sdk.streams.rate_limiting import custom_backoff_handler, default_backoff_handler
+from base_python.sdk.streams.exceptions import DefaultBackoffException, UserDefinedBackoffException
+from base_python.sdk.streams.rate_limiting import user_defined_backoff_handler, default_backoff_handler
 
 from base_python.sdk.streams.core import Stream
 
@@ -174,7 +174,7 @@ class HttpStream(Stream, ABC):
 
     # TODO allow configuring these parameters
     @default_backoff_handler(max_tries=5, factor=5)
-    @custom_backoff_handler(max_tries=5)
+    @user_defined_backoff_handler(max_tries=5)
     def _send_request(self, request: requests.PreparedRequest) -> requests.Response:
         """
         Wraps sending the request in rate limit and error handlers.
@@ -197,7 +197,7 @@ class HttpStream(Stream, ABC):
         if self.should_retry(response):
             custom_backoff_time = self.backoff_time(response)
             if custom_backoff_time:
-                raise CustomBackoffException(backoff=custom_backoff_time, request=request, response=response)
+                raise UserDefinedBackoffException(backoff=custom_backoff_time, request=request, response=response)
             else:
                 raise DefaultBackoffException(request=request, response=response)
         else:
