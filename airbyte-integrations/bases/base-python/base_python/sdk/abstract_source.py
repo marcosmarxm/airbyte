@@ -76,8 +76,8 @@ class AbstractSource(Source, ABC):
 
     def check(self, logger: AirbyteLogger, config: Mapping[str, Any]) -> AirbyteConnectionStatus:
         """Check connection"""
-        alive, error = self.check_connection(logger, config)
-        if not alive:
+        check_succeeded, error = self.check_connection(logger, config)
+        if not check_succeeded:
             return AirbyteConnectionStatus(status=Status.FAILED, message=str(error))
 
         return AirbyteConnectionStatus(status=Status.SUCCEEDED)
