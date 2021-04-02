@@ -5,7 +5,7 @@ class BaseBackoffException(requests.exceptions.HTTPError):
     pass
 
 
-class CustomBackoffException(BaseBackoffException):
+class UserDefinedBackoffException(BaseBackoffException):
     """
     An exception that exposes how long it attempted to backoff
     """
