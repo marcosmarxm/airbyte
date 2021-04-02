@@ -120,8 +120,8 @@ class AbstractSource(Source, ABC):
         logger.info(f"Syncing stream: {stream_name} ")
         record_counter = 0
         for record in stream_instance.read_stream(stream_state=copy.deepcopy(stream_state)):
-            now = int(datetime.now().timestamp()) * 1000
-            message = AirbyteRecordMessage(stream=stream_name, data=record, emitted_at=now)
+            now_millis = int(datetime.now().timestamp()) * 1000
+            message = AirbyteRecordMessage(stream=stream_name, data=record, emitted_at=now_millis)
             yield AirbyteMessage(type=MessageType.RECORD, record=message)
             record_counter += 1
             if use_incremental:
