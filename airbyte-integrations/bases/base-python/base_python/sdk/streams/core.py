@@ -12,7 +12,6 @@ def package_name_from_class(cls: object) -> str:
     module = inspect.getmodule(cls)
     return module.__name__.split(".")[0]
 
-
 class Stream(ABC):
     # Use self.logger in subclasses to log any messages
     logger = AirbyteLogger()  # TODO use native "logging" loggers with custom handlers

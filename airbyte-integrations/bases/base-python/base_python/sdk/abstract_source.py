@@ -121,7 +121,7 @@ class AbstractSource(Source, ABC):
             if use_incremental:
                 stream_state = stream_instance.get_updated_state(stream_state, record)
                 # TODO allow configuring checkpoint interval
-                if stream_instance.continuously_save_state and record_counter % 100 == 0:
+                if stream_instance.continuously_save_state and record_counter % 10000 == 0:
                     state[stream_name] = stream_state
                     yield AirbyteMessage(type=MessageType.STATE, state=AirbyteStateMessage(data=state))
 

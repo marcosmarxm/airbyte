@@ -6,7 +6,7 @@ class HttpAuthenticator(ABC):
     @abstractmethod
     def get_auth_header(self) -> Mapping[str, Any]:
         """
-        :return: A dictionary containing all the necessary params to authenticate.
+        :return: A dictionary containing all the necessary headers to authenticate.
         """
 
 
