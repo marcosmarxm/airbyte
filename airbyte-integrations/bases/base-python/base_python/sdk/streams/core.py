@@ -23,7 +23,7 @@ class Stream(ABC):
         return self.__class__.__name__
 
     @abstractmethod
-    def read_stream(self, stream_state: Mapping[str, Any] = {}) -> Iterable[Mapping[str, Any]]:
+    def read_stream(self, stream_state: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
         """
         This method should be overridden by subclasses
 

@@ -67,8 +67,8 @@ class HttpStream(Stream, ABC):
     @abstractmethod
     def path(
             self,
+            stream_state: Mapping[str, Any],
             request_configuration: Optional[Mapping] = None,
-            stream_state: Mapping[str, Any] = {},
             next_page_token: Mapping[str, Any] = None,
             parent_stream_record: Mapping = None
     ) -> str:
@@ -78,8 +78,8 @@ class HttpStream(Stream, ABC):
 
     def get_request_params(
             self,
+            stream_state: Mapping[str, Any],
             request_configuration: Optional[Mapping] = None,
-            stream_state: Mapping[str, Any] = {},
             next_page_token: Mapping[str, Any] = None,
             parent_stream_record: Mapping = None
     ) -> Mapping[str, Any]:
@@ -92,8 +92,8 @@ class HttpStream(Stream, ABC):
 
     def get_request_headers(
             self,
+            stream_state: Mapping[str, Any],
             request_configuration: Optional[Mapping] = None,
-            stream_state: Mapping[str, Any] = {},
             next_page_token: Mapping[str, Any] = None,
             parent_stream_record: Mapping = None
     ) -> Mapping[str, Any]:
@@ -104,8 +104,8 @@ class HttpStream(Stream, ABC):
 
     def get_request_body_json(
             self,
+            stream_state: Mapping[str, Any],
             request_configuration: Optional[Mapping] = None,
-            stream_state: Mapping[str, Any] = {},
             next_page_token: Mapping[str, Any] = None,
             parent_stream_record: Mapping = None
     ) -> Optional[Mapping]:
@@ -206,7 +206,7 @@ class HttpStream(Stream, ABC):
 
         return response
 
-    def _list_records(self, stream_state: Mapping[str, Any] = {}, parent_stream_record: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
+    def _list_records(self, stream_state: Mapping[str, Any], parent_stream_record: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
         """
         :param parent_stream_record If this is a child stream, this is a record from the parent stream. Otherwise, this record is None.
         :return:
@@ -245,6 +245,7 @@ class HttpStream(Stream, ABC):
     def read_stream(self, stream_state: Mapping[str, Any] = None) -> Iterable[Mapping[str, Any]]:
         # TODO this can be made more efficient if syncs are sequenced so that each API endpoint is called exactly once. Right now parent streams are
         # re-read for the benefit of syncing the child stream.
+        stream_state = stream_state or {}
         if self._parent_stream:
             for parent_stream_record in self._parent_stream.read_stream():
                 yield from self._list_records(parent_stream_record=parent_stream_record, stream_state=stream_state)
