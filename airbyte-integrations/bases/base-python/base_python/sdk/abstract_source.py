@@ -71,24 +71,7 @@ class AbstractSource(Source, ABC):
 
     def discover(self, logger: AirbyteLogger, config: Mapping[str, Any]) -> AirbyteCatalog:
         """Discover streams"""
-        streams = []
-
-        for name, stream in self.streams(config=config).items():
-            args = {
-                'name': name,
-                'json_schema': stream.get_json_schema(),
-            }
-
-            supported_sync_modes = [SyncMode.full_refresh]
-            if isinstance(stream, IncrementalStream):
-                supported_sync_modes.append(SyncMode.incremental)
-                args['source_defined_cursor'] = stream.source_defined_cursor
-                args['default_cursor_field'] = [stream.cursor_field] if isinstance(stream.cursor_field, str) else stream.cursor_field
-
-            args['supported_sync_modes'] = supported_sync_modes
-
-            streams.append(AirbyteStream(**args))
-
+        streams = [stream.as_airbyte_stream() for name, stream in self.streams(config=config).items()]
         return AirbyteCatalog(streams=streams)
 
     def check(self, logger: AirbyteLogger, config: Mapping[str, Any]) -> AirbyteConnectionStatus:

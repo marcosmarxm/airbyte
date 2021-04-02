@@ -1,6 +1,8 @@
 import inspect
 from abc import ABC, abstractmethod
 from typing import Mapping, Any, Iterable, List, Union
+
+from airbyte_protocol import AirbyteStream, SyncMode
 from base_python.logger import AirbyteLogger
 from base_python.schema_helpers import ResourceSchemaLoader
 
@@ -45,6 +47,12 @@ class Stream(ABC):
         print(self.name)
         return ResourceSchemaLoader(package_name_from_class(self.__class__)).get_schema(self.name)
 
+    def as_airbyte_stream(self) -> AirbyteStream:
+        return AirbyteStream(
+            name=self.name,
+            json_schema=dict(self.get_json_schema()),
+            supported_sync_modes=[SyncMode.full_refresh]
+        )
 
 class IncrementalStream(Stream, ABC):
     @property
@@ -94,3 +102,10 @@ class IncrementalStream(Stream, ABC):
         :return: An updated state object
         """
 
+    def as_airbyte_stream(self) -> AirbyteStream:
+        """ Convert to the protocol's representation of a Stream"""
+        stream = super().as_airbyte_stream()
+        stream.source_defined_cursor = self.source_defined_cursor
+        stream.supported_sync_modes.append(SyncMode.incremental)
+        stream.default_cursor_field = [self.cursor_field] if isinstance(self.cursor_field, str) else self.cursor_field
+        return stream
