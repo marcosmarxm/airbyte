@@ -44,7 +44,8 @@ public class OracleSource extends AbstractJdbcSource implements Source {
   public OracleSource() {
     super(DRIVER_CLASS, new OracleJdbcStreamingQueryConfiguration());
   }
-
+  
+  // Adding a simple comment.
   @Override
   public JsonNode toJdbcConfig(JsonNode config) {
     final ImmutableMap.Builder<Object, Object> configBuilder = ImmutableMap.builder()
